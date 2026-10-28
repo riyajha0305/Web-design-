@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>React Notes App</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 25px 15px;
+            font-family: Arial, sans-serif;
+            background: #f1f4fa;
+            color: #263248;
+        }
+
+        .container {
+            max-width: 650px;
+            margin: 20px auto;
+            padding: 25px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 16px #00000012;
+        }
+
+        h1 {
+            color: #435574;
+            text-align: center;
+        }
+
+        .note-form {
+            display: flex;
+            gap: 10px;
+        }
+
+        input {
+            flex: 1;
+            min-width: 0;
+            padding: 12px;
+            border: 1px solid #ccd3df;
+            border-radius: 6px;
+            font-size: 15px;
+        }
+
+        button {
+            padding: 11px 16px;
+            background: #435574;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .note {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 14px;
+            margin-top: 12px;
+            background: #f4f6fa;
+            border-radius: 7px;
+            overflow-wrap: anywhere;
+        }
+
+        .delete {
+            background: #bd4c55;
+            flex-shrink: 0;
+        }
+
+        .empty {
+            text-align: center;
+            color: #69778b;
+            margin-top: 25px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="root"></div>
+
+    <!-- React libraries -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <script type="text/babel">
+        const { useState } = React;
+
+        function NotesApp() {
+            const [notes, setNotes] = useState([]);
+            const [noteText, setNoteText] = useState("");
+
+            function addNote(event) {
+                event.preventDefault();
+
+                const text = noteText.trim();
+
+                if (text === "") {
+                    return;
+                }
+
+                const newNote = {
+                    id: Date.now() + Math.random(),
+                    text: text
+                };
+
+                setNotes(previousNotes => [...previousNotes, newNote]);
+                setNoteText("");
+            }
+
+            function deleteNote(id) {
+                setNotes(previousNotes =>
+                    previousNotes.filter(note => note.id !== id)
+                );
+            }
+
+            return (
+                <main className="container">
+                    <h1>📝 React Notes App</h1>
+                    <p>Write down your thoughts and keep them organized.</p>
+
+                    <form className="note-form" onSubmit={addNote}>
+                        <input
+                            type="text"
+                            placeholder="Write a note..."
+                            value={noteText}
+                            onChange={event =>
+                                setNoteText(event.target.value)
+                            }
+                            aria-label="New note"
+                        />
+                        <button type="submit">Add Note</button>
+                    </form>
+
+                    <h2>My Notes ({notes.length})</h2>
+
+                    {notes.length === 0 ? (
+                        <p className="empty">
+                            No notes yet. Add your first note!
+                        </p>
+                    ) : (
+                        notes.map(note => (
+                            <div className="note" key={note.id}>
+                                <span>{note.text}</span>
+                                <button
+                                    className="delete"
+                                    onClick={() => deleteNote(note.id)}
+                                >
+                                    Delete
+                                </button>
+                            </div>
+                        ))
+                    )}
+                </main>
+            );
+        }
+
+        const root = ReactDOM.createRoot(
+            document.getElementById("root")
+        );
+
+        root.render(<NotesApp />);
+    </script>
+</body>
+</html>
