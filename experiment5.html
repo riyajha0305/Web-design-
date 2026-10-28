@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather App</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #dceeff, #eef2ff);
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            color: #263248;
+        }
+
+        .container {
+            background: white;
+            width: 100%;
+            max-width: 430px;
+            padding: 30px;
+            border-radius: 18px;
+            text-align: center;
+            box-shadow: 0 8px 25px #26324820;
+        }
+
+        h1 {
+            color: #345b91;
+        }
+
+        .search {
+            display: flex;
+            gap: 8px;
+        }
+
+        input {
+            flex: 1;
+            min-width: 0;
+            padding: 12px;
+            border: 1px solid #ccd6e5;
+            border-radius: 7px;
+            font-size: 15px;
+        }
+
+        button {
+            padding: 12px 15px;
+            border: none;
+            border-radius: 7px;
+            background: #345b91;
+            color: white;
+            cursor: pointer;
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: wait;
+        }
+
+        #weather {
+            margin-top: 25px;
+            padding: 20px;
+            background: #f0f6ff;
+            border-radius: 12px;
+        }
+
+        #temperature {
+            font-size: 42px;
+            font-weight: bold;
+            margin: 10px;
+        }
+
+        #message {
+            color: #53647b;
+        }
+    </style>
+</head>
+
+<body>
+    <main class="container">
+        <h1>🌦️ Weather App</h1>
+        <p>Check the current weather in any city.</p>
+
+        <form class="search" id="searchForm">
+            <input id="city" type="text"
+                   placeholder="Enter city name"
+                   aria-label="City name" required>
+            <button id="searchButton" type="submit">Search</button>
+        </form>
+
+        <p id="message" aria-live="polite">
+            Enter a city to get started.
+        </p>
+
+        <section id="weather" hidden>
+            <h2 id="cityName"></h2>
+            <p id="condition"></p>
+            <p id="temperature"></p>
+            <p id="details"></p>
+        </section>
+    </main>
+
+    <script>
+        const form = document.getElementById("searchForm");
+        const cityInput = document.getElementById("city");
+        const message = document.getElementById("message");
+        const weather = document.getElementById("weather");
+        const searchButton = document.getElementById("searchButton");
+
+        function getCondition(code) {
+            if (code === 0) return "Clear sky ☀️";
+            if ([1, 2].includes(code)) return "Partly cloudy 🌤️";
+            if (code === 3) return "Overcast ☁️";
+            if ([45, 48].includes(code)) return "Foggy 🌫️";
+            if ([51, 53, 55, 56, 57].includes(code))
+                return "Drizzle 🌦️";
+            if ([61, 63, 65, 66, 67, 80, 81, 82].includes(code))
+                return "Rainy 🌧️";
+            if ([71, 73, 75, 77, 85, 86].includes(code))
+                return "Snowy ❄️";
+            if ([95, 96, 99].includes(code))
+                return "Thunderstorm ⛈️";
+            return "Current conditions";
+        }
+
+        form.addEventListener("submit", async function(event) {
+            event.preventDefault();
+
+            const city = cityInput.value.trim();
+            if (!city) return;
+
+            searchButton.disabled = true;
+            weather.hidden = true;
+            message.textContent = "Loading weather data...";
+
+            try {
+                const geoResponse = await fetch(
+                    "https://geocoding-api.open-meteo.com/v1/search?name=" +
+                    encodeURIComponent(city) + "&count=1&language=en&format=json"
+                );
+
+                if (!geoResponse.ok) {
+                    throw new Error("Unable to find the city.");
+                }
+
+                const geoData = await geoResponse.json();
+
+                if (!geoData.results || geoData.results.length === 0) {
+                    throw new Error("City not found. Please try another name.");
+                }
+
+                const place = geoData.results[0];
+
+                const url = "https://api.open-meteo.com/v1/forecast" +
+                    "?latitude=" + place.latitude +
+                    "&longitude=" + place.longitude +
+                    "&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m";
+
+                const response = await fetch(url);
+
+                if (!response.ok) {
+                    throw new Error("Weather data is unavailable.");
+                }
+
+                const data = await response.json();
+                const current = data.current;
+
+                document.getElementById("cityName").textContent =
+                    place.name + (place.country ? ", " + place.country : "");
+
+                document.getElementById("condition").textContent =
+                    getCondition(current.weather_code);
+
+                document.getElementById("temperature").textContent =
+                    current.temperature_2m + "°C";
+
+                document.getElementById("details").textContent =
+                    "Feels like: " + current.apparent_temperature + "°C" +
+                    " | Humidity: " + current.relative_humidity_2m + "%" +
+                    " | Wind: " + current.wind_speed_10m + " km/h";
+
+                weather.hidden = false;
+                message.textContent = "Current weather information";
+            } catch (error) {
+                message.textContent =
+                    error.message || "Something went wrong. Please try again.";
+            } finally {
+                searchButton.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>
